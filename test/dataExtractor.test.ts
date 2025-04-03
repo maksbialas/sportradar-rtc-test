@@ -14,10 +14,7 @@ const extractedOutput: SportEvent[] = [
     homeCompetitor: "FC Barcelona",
     awayCompetitor: "Real Madrid",
     status: "PRE",
-    scores: new Map([
-      ["CURRENT", { home: 5, away: 1 }],
-      ["PERIOD_1", { home: 3, away: 0 }],
-    ]),
+    scores: new Map(),
   },
 ];
 
@@ -36,7 +33,7 @@ describe("Sport Event data extractor", () => {
       ]),
     );
     vi.spyOn(mockStateHandler, "getData").mockResolvedValue([
-      ["a", "b", "c", "1234", "e", "f", "g", "h@5:1|i@3:0"],
+      ["a", "b", "c", "1234", "e", "f", "g", null],
     ]);
   });
 
@@ -44,7 +41,7 @@ describe("Sport Event data extractor", () => {
     vi.restoreAllMocks();
   });
 
-  it("should correctly compose data from odds and mappings", async () => {
+  it("should correctly compose data from odds and mappings with no score", async () => {
     const extractor = new SportEventDataExtractor(
       mockStateHandler,
       mockMappingsHandler,
@@ -53,11 +50,33 @@ describe("Sport Event data extractor", () => {
     expect(await extractor.extract()).toEqual(extractedOutput);
   });
 
+  it("should correctly compose data from odds and mappings with scores present", async () => {
+    vi.spyOn(mockStateHandler, "getData").mockResolvedValue([
+      ["a", "b", "c", "1234", "e", "f", "g", "h@5:1|i@3:0"],
+    ]);
+
+    const extractor = new SportEventDataExtractor(
+      mockStateHandler,
+      mockMappingsHandler,
+    );
+
+    expect(await extractor.extract()).toEqual([
+      {
+        ...extractedOutput[0],
+        scores: new Map([
+          ["CURRENT", { home: 5, away: 1 }],
+          ["PERIOD_1", { home: 3, away: 0 }],
+        ]),
+      },
+    ]);
+  });
+
   it("should skip processing when a key is not present in mappings", async () => {
     // odds have key not present in mappings
     vi.spyOn(mockStateHandler, "getData").mockResolvedValue([
-      ["a", "b", "c", "1234", "e", "f", "g", "h@5:1|i@3:0"],
-      ["a", "b", "c", "1234", "x", "f", "g", "h@5:1|i@3:0"],
+      ["a", "b", "c", "1234", "e", "f", "g", null],
+      ["a", "b", "c", "1234", "x", "f", "g", null],
+      ["a", "b", "c", "1234", "e", "f", "g", "y@5:1|i@3:0"],
     ]);
     const errorSpy = vi.spyOn(console, "error");
 

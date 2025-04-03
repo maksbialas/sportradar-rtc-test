@@ -36,12 +36,8 @@ abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
   #validate(body: unknown): asserts body is T {
     // typescript magic to allow body shape check on a generic function in abstract class
     const bodyAsRecord = body as Record<string, unknown> | null | undefined;
-    if (typeof bodyAsRecord?.[this.dataKey] !== "string") {
-      console.error(
-        `'${this.dataKey}' string not found in response ${JSON.stringify(body)}`,
-      );
+    if (typeof bodyAsRecord?.[this.dataKey] !== "string")
       throw new Error(`'${this.dataKey}' string not found in response`);
-    }
   }
 
   protected abstract extract(encoded: T): U;
@@ -86,14 +82,10 @@ export class StateApiHandler extends BaseApiHandler<
         .replace(/,$/, "") // strip trailing comma
         .split(",");
 
-      if (splitLine.length > 8 || splitLine.length < 7) {
-        console.error(
-          `Odds line '${splitLine}' from '${encoded}' has illegal size (${splitLine.length}).`,
-        );
+      if (splitLine.length > 8 || splitLine.length < 7)
         throw new Error(
           `Odds line '${splitLine}' has illegal size (${splitLine.length}).`,
         );
-      }
 
       if (splitLine.length === 7) {
         extractedRecords.push([...splitLine, null] as StateResponseExtracted);
@@ -126,12 +118,8 @@ export class MappingsApiHandler extends BaseApiHandler<
     for (const pair of mappingsSplit) {
       const [key, val] = pair.split(":");
 
-      if (key === undefined || val === undefined) {
-        console.error(
-          `Mappings '${mappingsSplit}' have an entry with no key or val.`,
-        );
+      if (key === undefined || val === undefined)
         throw new Error("Mappings have an entry with no key or val.");
-      }
 
       keyValPairs.push([key, val]);
     }
