@@ -102,8 +102,7 @@ export class MappingsApiHandler extends BaseApiHandler<
 > {
   apiUrl = Config.instance.baseApiUrl + "/mappings";
   dataKey = "mappings" as const;
-  protected encodingValidationRegex =
-    /^([\w\-]+:[\w\s\-]+)(;[\w\-]+:[\w\s\-]+)*$/;
+  protected encodingValidationRegex = /^([\w-]+:[\w\s-]+)(;[\w-]+:[\w\s-]+)*$/;
 
   protected extract(encoded: MappingsAPIResponse): Map<string, string> {
     const mappingsSplit = encoded.mappings
