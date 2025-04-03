@@ -1,14 +1,18 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { MappingsApiHandler, StateApiHandler, Tuple8 } from "$/apiHandlers";
-import type { MappingsAPIResponse, StateAPIResponse } from "$/apiHandlers";
+import {
+  MappingsApiHandler,
+  StateApiHandler,
+  Tuple8,
+} from "../src/apiHandlers";
+import type { MappingsAPIResponse, StateAPIResponse } from "../src/apiHandlers";
 
 const mockStateResponse: StateAPIResponse = {
-  odds: "a,b,c,d,e,f,g,\nh,i,j,k,l,m,n,\no,p,q,r,s,t,u,",
+  odds: "a,b,c,d,e,f,g,h,\ni,j,k,l,m,n,o,p,\nq,r,s,t,u,v,w,x",
 };
 const expectedState: Tuple8[] = [
-  ["a", "b", "c", "d", "e", "f", "g", ""],
-  ["h", "i", "j", "k", "l", "m", "n", ""],
-  ["o", "p", "q", "r", "s", "t", "u", ""],
+  ["a", "b", "c", "d", "e", "f", "g", "h"],
+  ["i", "j", "k", "l", "m", "n", "o", "p"],
+  ["q", "r", "s", "t", "u", "v", "w", "x"],
 ];
 
 const mockMappingsResponse: MappingsAPIResponse = {
