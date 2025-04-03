@@ -52,4 +52,30 @@ describe("Sport Event data extractor", () => {
 
     expect(await extractor.extract()).toEqual(desiredOutput);
   });
+
+  it("should throw an error when a key is not present in mappings", async () => {
+    // mappings are empty
+    vi.spyOn(mockMappingsHandler, "getData").mockResolvedValue(new Map([]));
+
+    const extractor = new SportEventDataExtractor(
+      mockStateHandler,
+      mockMappingsHandler,
+    );
+
+    await expect(() => extractor.extract()).rejects.toThrowError();
+  });
+
+  it("should throw an error when score encoding is malformed", async () => {
+    // mappings are empty
+    vi.spyOn(mockStateHandler, "getData").mockResolvedValue([
+      ["a", "b", "c", "1234", "e", "f", "g", "h@1||3:0"],
+    ]);
+
+    const extractor = new SportEventDataExtractor(
+      mockStateHandler,
+      mockMappingsHandler,
+    );
+
+    await expect(() => extractor.extract()).rejects.toThrowError();
+  });
 });
