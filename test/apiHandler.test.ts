@@ -4,7 +4,7 @@ import { MappingsApiHandler, StateApiHandler } from "../src/apiHandlers";
 const stateApiParameters = {
   ApiHandler: StateApiHandler,
   responseBody: {
-    odds: "a,b,c,d,e,f,g,h,\ni,j,k,l,m,n,o,p,\nq,r,s,t,u,v,w,x,",
+    odds: "a,b,c,d,e,f,g,h\ni,j,k,l,m,n,o,p\nq,r,s,t,u,v,w,x",
   },
   expectedData: [
     ["a", "b", "c", "d", "e", "f", "g", "h"],

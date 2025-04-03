@@ -83,7 +83,8 @@ export class StateApiHandler extends BaseApiHandler<
 > {
   apiUrl = Config.instance.baseApiUrl + "/state";
   dataKey = "odds" as const;
-  protected encodingValidationRegex = /^([\w\-@|]+,){8}(\n([\w\-@|]+,){8})*$/;
+  protected encodingValidationRegex =
+    /^(([\w\-@|:]+,){7}[\w\-@|:]+\n)+([\w\-@|:]+,){7}[\w\-@|:]+/;
 
   protected extract(encoded: StateAPIResponse): Tuple8[] {
     return encoded.odds
@@ -102,7 +103,7 @@ export class MappingsApiHandler extends BaseApiHandler<
   apiUrl = Config.instance.baseApiUrl + "/mappings";
   dataKey = "mappings" as const;
   protected encodingValidationRegex =
-    /^([\w\-@|]+:[\w\-@|]+)(;[\w\-@|]+:[\w\-@|]+)*$/;
+    /^([\w\-]+:[\w\s\-]+)(;[\w\-]+:[\w\s\-]+)*$/;
 
   protected extract(encoded: MappingsAPIResponse): Map<string, string> {
     const mappingsSplit = encoded.mappings
