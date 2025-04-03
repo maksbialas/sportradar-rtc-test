@@ -1,43 +1,36 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import {
-  MappingsApiHandler,
-  StateApiHandler,
-  Tuple8,
-} from "../src/apiHandlers";
-import type { MappingsAPIResponse, StateAPIResponse } from "../src/apiHandlers";
-
-const mockStateResponse: StateAPIResponse = {
-  odds: "a,b,c,d,e,f,g,h,\ni,j,k,l,m,n,o,p,\nq,r,s,t,u,v,w,x",
-};
-const expectedState: Tuple8[] = [
-  ["a", "b", "c", "d", "e", "f", "g", "h"],
-  ["i", "j", "k", "l", "m", "n", "o", "p"],
-  ["q", "r", "s", "t", "u", "v", "w", "x"],
-];
-
-const mockMappingsResponse: MappingsAPIResponse = {
-  mappings: "id1:value1;id2:value2;idN:valueN",
-};
-const expectedMappings: Map<string, string> = new Map([
-  ["id1", "value1"],
-  ["id2", "value2"],
-  ["idN", "valueN"],
-]);
+import { MappingsApiHandler, StateApiHandler } from "../src/apiHandlers";
 
 describe.each([
   {
     apiHandler: new StateApiHandler(),
-    responseBody: mockStateResponse,
-    expectedData: expectedState,
+    responseBody: {
+      odds: "a,b,c,d,e,f,g,h,\ni,j,k,l,m,n,o,p,\nq,r,s,t,u,v,w,x,",
+    },
+    expectedData: [
+      ["a", "b", "c", "d", "e", "f", "g", "h"],
+      ["i", "j", "k", "l", "m", "n", "o", "p"],
+      ["q", "r", "s", "t", "u", "v", "w", "x"],
+    ] as const,
+    nonDecodableBody: { odds: "a,b,c,d\ne,f,g,h" },
   },
   {
     apiHandler: new MappingsApiHandler(),
-    responseBody: mockMappingsResponse,
-    expectedData: expectedMappings,
+    responseBody: {
+      mappings: "id1:value1;id2:value2;idN:valueN",
+    },
+    expectedData: new Map([
+      ["id1", "value1"],
+      ["id2", "value2"],
+      ["idN", "valueN"],
+    ]),
+    nonDecodableBody: {
+      mappings: "id1;id2:value2;id3",
+    },
   },
 ])(
   "$apiHandler.constructor.name API handler",
-  ({ apiHandler, responseBody, expectedData }) => {
+  ({ apiHandler, responseBody, expectedData, nonDecodableBody }) => {
     beforeEach(() => {
       // mock fetch to return responseBody in a response body
       vi.spyOn(global, "fetch").mockResolvedValue(
@@ -57,6 +50,20 @@ describe.each([
     it("should fetch current state", async () => {
       const response = await apiHandler.getData();
       expect(response).toEqual(expectedData);
+    });
+
+    it("should throw errror if data not found in response", async () => {
+      vi.spyOn(global, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({ something: "different" })),
+      );
+      await expect(() => apiHandler.getData()).rejects.toThrowError();
+    });
+
+    it("should throw errror if response data is not decodable", async () => {
+      vi.spyOn(global, "fetch").mockResolvedValue(
+        new Response(JSON.stringify(nonDecodableBody)),
+      );
+      await expect(() => apiHandler.getData()).rejects.toThrowError();
     });
   },
 );
