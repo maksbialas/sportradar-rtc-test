@@ -11,7 +11,11 @@
     "declarationMap": true,
     "sourceMap": true,
     "skipLibCheck": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "paths": {
+      "$/*": ["src/*"]
+    }
   },
   "include": ["src", "test"]
 }

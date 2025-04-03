@@ -1,5 +1,7 @@
 # Real-time Crawlers - Interview Task
 
+[![codecov](https://codecov.io/github/maksbialas/sportradar-rtc/graph/badge.svg?token=3VJK3RM4ZS)](https://codecov.io/github/maksbialas/sportradar-rtc)
+
 ## Requirements
 * docker `>=23.0.5`
 * docker-compose `>=2.24.6`
