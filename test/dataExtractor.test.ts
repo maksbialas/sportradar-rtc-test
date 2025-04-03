@@ -12,7 +12,6 @@ describe("Sport Event data extractor", () => {
         ["a", "id"],
         ["b", "FOOTBALL"],
         ["c", "La Liga"],
-        ["d", "1234"],
         ["e", "FC Barcelona"],
         ["f", "Real Madrid"],
         ["g", "PRE"],
@@ -21,7 +20,7 @@ describe("Sport Event data extractor", () => {
       ]),
     );
     vi.spyOn(mockStateHandler, "getData").mockResolvedValue([
-      ["a", "b", "c", "d", "e", "f", "g", "h@5:1|i@3:0"],
+      ["a", "b", "c", "1234", "e", "f", "g", "h@5:1|i@3:0"],
     ]);
   });
 
@@ -29,26 +28,28 @@ describe("Sport Event data extractor", () => {
     vi.restoreAllMocks();
   });
 
-  it("should correctly compose data from odds and mappings", () => {
+  it("should correctly compose data from odds and mappings", async () => {
     const extractor = new SportEventDataExtractor(
       mockStateHandler,
       mockMappingsHandler,
     );
 
-    const desiredOutput: SportEvent = {
-      id: "a",
-      sport: "FOOTBALL",
-      competition: "La Liga",
-      startTimeTs: 1234,
-      homeCompetitor: "FC Barcelona",
-      awayCompetitor: "Real Madrid",
-      status: "PRE",
-      scores: new Map([
-        ["CURRENT", { home: 5, away: 1 }],
-        ["PERIOD_1", { home: 3, away: 0 }],
-      ]),
-    };
+    const desiredOutput: SportEvent[] = [
+      {
+        id: "a",
+        sport: "FOOTBALL",
+        competition: "La Liga",
+        startTimeTs: 1234,
+        homeCompetitor: "FC Barcelona",
+        awayCompetitor: "Real Madrid",
+        status: "PRE",
+        scores: new Map([
+          ["CURRENT", { home: 5, away: 1 }],
+          ["PERIOD_1", { home: 3, away: 0 }],
+        ]),
+      },
+    ];
 
-    expect(extractor.extract()).toEqual(desiredOutput);
+    expect(await extractor.extract()).toEqual(desiredOutput);
   });
 });
