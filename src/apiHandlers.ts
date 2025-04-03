@@ -1,4 +1,28 @@
-export type StateAPIResponse = { odds: string };
+abstract class BaseApiHandler<T, U> {
+  abstract apiUrl: string;
+  abstract dataKey: string;
+  protected abstract extract(encoded: T): U;
+
+  async #fetchRawData(): Promise<unknown> {
+    const response = await fetch(this.apiUrl);
+    return response.json();
+  }
+
+  #validate(body: unknown): asserts body is T {
+    // typescript magic to allow body shape check on a generic function in abstract class
+    const bodyAsRecord = body as Record<string, unknown> | null | undefined;
+    if (typeof bodyAsRecord?.[this.dataKey] !== "string")
+      throw new TypeError(`'${this.dataKey}' string not found in response`);
+  }
+
+  async getData(): Promise<U> {
+    const rawData = await this.#fetchRawData();
+    this.#validate(rawData);
+    return this.extract(rawData);
+  }
+}
+
+type StateAPIResponse = { odds: string };
 export type Tuple8 = [
   string,
   string,
@@ -10,23 +34,15 @@ export type Tuple8 = [
   string,
 ];
 
-export class StateApiHandler {
+export class StateApiHandler extends BaseApiHandler<
+  StateAPIResponse,
+  Tuple8[]
+> {
   apiUrl = "http://localhost:3000/api/state";
-  async getData(): Promise<Tuple8[]> {
-    const response = await fetch(this.apiUrl);
-    const data: unknown = await response.json();
+  dataKey = "odds";
 
-    if (
-      typeof data !== "object" ||
-      data === null ||
-      !("odds" in data) ||
-      typeof data.odds !== "string"
-    )
-      throw new TypeError("'odds' string not found in response");
-
-    const oddsEncoded = data.odds;
-
-    const oddsUnmapped = oddsEncoded
+  protected extract(encoded: StateAPIResponse): Tuple8[] {
+    const oddsUnmapped = encoded.odds
       .replaceAll(/,(\n|$)/g, "$1")
       .split("\n", -1)
       .map((sportEvent) => sportEvent.split(","));
@@ -42,25 +58,17 @@ export class StateApiHandler {
   }
 }
 
-export type MappingsAPIResponse = { mappings: string };
+type MappingsAPIResponse = { mappings: string };
 
-export class MappingsApiHandler {
+export class MappingsApiHandler extends BaseApiHandler<
+  MappingsAPIResponse,
+  Map<string, string>
+> {
   apiUrl = "http://localhost:3000/api/mappings";
-  async getData(): Promise<Map<string, string>> {
-    const response = await fetch(this.apiUrl);
-    const data: unknown = await response.json();
+  dataKey = "mappings";
 
-    if (
-      typeof data !== "object" ||
-      data === null ||
-      !("mappings" in data) ||
-      typeof data.mappings !== "string"
-    )
-      throw new TypeError("'mappings' string not found in response");
-
-    const mappingsEncoded = data.mappings;
-
-    const mappingsSplit = mappingsEncoded
+  protected extract(encoded: MappingsAPIResponse): Map<string, string> {
+    const mappingsSplit = encoded.mappings
       .split(";")
       .map((mapping) => mapping.split(":"));
 
