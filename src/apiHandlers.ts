@@ -3,7 +3,6 @@ import Config from "./config";
 abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
   abstract apiUrl: string;
   abstract dataKey: keyof T & string;
-  protected abstract encodingValidationRegex: RegExp;
 
   #cache: { eTag: string; cachedData: unknown } | null = null;
 
@@ -45,28 +44,18 @@ abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
     }
   }
 
-  #checkEncoding(data: T) {
-    if (!this.encodingValidationRegex.test(data[this.dataKey])) {
-      console.error(`Cannot decode '${this.dataKey}': ${data[this.dataKey]}`);
-      throw new Error(
-        `Cannot decode '${this.dataKey}' - encoding is corrupted`,
-      );
-    }
-  }
-
   protected abstract extract(encoded: T): U;
 
   async getData(): Promise<U> {
     const cache = await this.#useCachedData();
     const data = cache ?? (await this.#fetchRawData()); // fetch data only on cache absent or outdated
     this.#validate(data);
-    this.#checkEncoding(data);
     return this.extract(data);
   }
 }
 
 type StateAPIResponse = { odds: string };
-export type Tuple8 = [
+export type StateResponseExtracted = [
   string,
   string,
   string,
@@ -74,23 +63,46 @@ export type Tuple8 = [
   string,
   string,
   string,
-  string,
+  string | null,
 ];
 
 export class StateApiHandler extends BaseApiHandler<
   StateAPIResponse,
-  Tuple8[]
+  StateResponseExtracted[]
 > {
   apiUrl = Config.instance.baseApiUrl + "/state";
   dataKey = "odds" as const;
-  protected encodingValidationRegex =
-    /^(([\w\-@|:]+,){7}[\w\-@|:]+\n)+([\w\-@|:]+,){7}[\w\-@|:]+/;
 
-  protected extract(encoded: StateAPIResponse): Tuple8[] {
-    return encoded.odds
-      .replaceAll(/,(\n|$)/g, "$1")
-      .split("\n", -1)
-      .map((sportEvent) => sportEvent.split(",")) as Tuple8[];
+  protected extract(encoded: StateAPIResponse): StateResponseExtracted[] {
+    if (encoded.odds === "") return [];
+    const extractedRecords: StateResponseExtracted[] = [];
+
+    let lines = encoded.odds
+      .replace(/(,\n?|\n)$/, "") // strip trailing newline / comma + newline
+      .split("\n");
+
+    for (const line of lines) {
+      const splitLine = line
+        .replace(/,$/, "") // strip trailing comma
+        .split(",");
+
+      if (splitLine.length > 8 || splitLine.length < 7) {
+        console.error(
+          `Odds line '${splitLine}' from '${encoded}' has illegal size (${splitLine.length}).`,
+        );
+        throw new Error(
+          `Odds line '${splitLine}' has illegal size (${splitLine.length}).`,
+        );
+      }
+
+      if (splitLine.length === 7) {
+        extractedRecords.push([...splitLine, null] as StateResponseExtracted);
+      } else {
+        extractedRecords.push(splitLine as StateResponseExtracted);
+      }
+    }
+
+    return extractedRecords;
   }
 }
 
@@ -102,13 +114,28 @@ export class MappingsApiHandler extends BaseApiHandler<
 > {
   apiUrl = Config.instance.baseApiUrl + "/mappings";
   dataKey = "mappings" as const;
-  protected encodingValidationRegex = /^([\w-]+:[\w\s-]+)(;[\w-]+:[\w\s-]+)*$/;
 
   protected extract(encoded: MappingsAPIResponse): Map<string, string> {
-    const mappingsSplit = encoded.mappings
-      .split(";")
-      .map((mapping) => mapping.split(":")) as [string, string][];
+    if (encoded.mappings === "") return new Map();
+    const keyValPairs: [string, string][] = [];
 
-    return new Map(mappingsSplit);
+    const mappingsSplit = encoded.mappings
+      .replace(/;$/, "") // strip trailing semicolon
+      .split(";");
+
+    for (const pair of mappingsSplit) {
+      const [key, val] = pair.split(":");
+
+      if (key === undefined || val === undefined) {
+        console.error(
+          `Mappings '${mappingsSplit}' have an entry with no key or val.`,
+        );
+        throw new Error("Mappings have an entry with no key or val.");
+      }
+
+      keyValPairs.push([key, val]);
+    }
+
+    return new Map(keyValPairs);
   }
 }

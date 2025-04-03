@@ -78,4 +78,9 @@ describe("Sport Event data extractor", () => {
 
     await expect(() => extractor.extract()).rejects.toThrowError();
   });
+
+  it("assigns default handlers when no handlers are passed in constructor", async () => {
+    const extractor = new SportEventDataExtractor();
+    expect(extractor).toBeDefined();
+  });
 });
