@@ -7,6 +7,15 @@ type Score = {
 
 type Period = "CURRENT" | `PERIOD_${number}`;
 
+class NoMappingError extends Error {
+  key: string;
+
+  constructor(key: string) {
+    super(`Mapping for key '${key}' not found.`);
+    this.key = key;
+  }
+}
+
 export type SportEvent = {
   id: string;
   sport: "FOOTBALL" | "BASKETBALL";
@@ -31,12 +40,6 @@ export class SportEventDataExtractor {
   }
 
   #splitScores(scoresEncoded: string): [string, Score][] {
-    const scoresRegEx = /^([\w-]+@\d+:\d+\|)+[\w-]+@\d+:\d+$/;
-    if (!scoresRegEx.test(scoresEncoded)) {
-      console.error(`Cannot decode scores '${scoresEncoded}'`);
-      throw new Error("Cannot decode scores - encoding is corrupted");
-    }
-
     return scoresEncoded.split("|").map((scoreRecord) => {
       const [period, scores] = scoreRecord.split("@");
       const [home, away] = scores.split(":").map((s) => parseInt(s));
@@ -46,20 +49,18 @@ export class SportEventDataExtractor {
   }
 
   async extract(): Promise<SportEvent[]> {
-    const mappings = await this.#mappingsHandler.getData();
-    const getMapping = (key: string) => {
+    function getMapping(key: string) {
       const mapping = mappings.get(key);
-      if (mapping === undefined) {
-        console.error(
-          `Mapping for key '${key}' not found in mappings ${mappings}.`,
-        );
-        throw new Error(`Mapping for key '${key}' not found.`);
-      }
-      return mapping;
-    };
+      if (mapping === undefined) throw new NoMappingError(key);
 
+      return mapping;
+    }
+
+    const mappings = await this.#mappingsHandler.getData();
     const odds = await this.#stateHandler.getData();
-    return odds.map((sportEvent) => {
+    const sportEvents: SportEvent[] = [];
+
+    for (const sportEvent of odds) {
       const [
         id,
         sport,
@@ -71,21 +72,39 @@ export class SportEventDataExtractor {
         scoresEncoded,
       ] = sportEvent;
 
-      const scoresMapped = this.#splitScores(scoresEncoded).map(
-        ([periodEncoded, score]) =>
-          [getMapping(periodEncoded) as Period, score] as const,
-      );
-
-      return {
-        id,
-        sport: getMapping(sport) as "FOOTBALL" | "BASKETBALL",
-        competition: getMapping(competition),
-        startTimeTs: parseInt(startTimeTs),
-        homeCompetitor: getMapping(homeCompetitor),
-        awayCompetitor: getMapping(awayCompetitor),
-        status: getMapping(status) as "PRE" | "LIVE",
-        scores: new Map(scoresMapped),
-      };
-    });
+      try {
+        let scoresMapped: [Period, Score][];
+        if (scoresEncoded === null) {
+          scoresMapped = [];
+        } else {
+          scoresMapped = this.#splitScores(scoresEncoded).map(
+            ([periodEncoded, score]) => [
+              getMapping(periodEncoded) as Period,
+              score,
+            ],
+          );
+        }
+        sportEvents.push({
+          id,
+          sport: getMapping(sport) as "FOOTBALL" | "BASKETBALL",
+          competition: getMapping(competition),
+          startTimeTs: parseInt(startTimeTs),
+          homeCompetitor: getMapping(homeCompetitor),
+          awayCompetitor: getMapping(awayCompetitor),
+          status: getMapping(status) as "PRE" | "LIVE",
+          scores: new Map(scoresMapped),
+        });
+      } catch (e) {
+        if (e instanceof NoMappingError) {
+          console.error(
+            `Mapping for key '${e.key}' required in ${JSON.stringify(sportEvent)},`,
+            `not found in mappings { ${[...mappings.entries().map(([k, v]) => `${k} => ${v}`)].join(", ")} }.`,
+          );
+        } else {
+          throw e; // if not a NoMappingError, propagate
+        }
+      }
+    }
+    return sportEvents;
   }
 }
