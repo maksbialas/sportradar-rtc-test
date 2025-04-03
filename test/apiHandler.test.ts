@@ -2,7 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { MappingsApiHandler, StateApiHandler } from "../src/apiHandlers";
 
 const stateApiParameters = {
-  apiHandler: new StateApiHandler(),
+  ApiHandler: StateApiHandler,
   responseBody: {
     odds: "a,b,c,d,e,f,g,h,\ni,j,k,l,m,n,o,p,\nq,r,s,t,u,v,w,x,",
   },
@@ -15,7 +15,7 @@ const stateApiParameters = {
 };
 
 const mappingsApiParameters = {
-  apiHandler: new MappingsApiHandler(),
+  ApiHandler: MappingsApiHandler,
   responseBody: {
     mappings: "id1:value1;id2:value2;idN:valueN",
   },
@@ -30,13 +30,13 @@ const mappingsApiParameters = {
 };
 
 describe.each([stateApiParameters, mappingsApiParameters])(
-  "$apiHandler.constructor.name API handler",
-  ({ apiHandler, responseBody, expectedData, nonDecodableBody }) => {
+  "$ApiHandler.name API handler",
+  ({ ApiHandler, responseBody, expectedData, nonDecodableBody }) => {
     beforeEach(() => {
       // mock fetch to return responseBody in a response body
       vi.spyOn(global, "fetch").mockResolvedValue(
         new Response(JSON.stringify(responseBody), {
-          headers: { ETag: `W/"456"` },
+          headers: { ETag: `W/"123"` },
         }),
       );
     });
@@ -46,6 +46,7 @@ describe.each([stateApiParameters, mappingsApiParameters])(
     });
 
     it("should call proper API url with GET request", async () => {
+      const apiHandler = new ApiHandler();
       await apiHandler.getData();
       expect(global.fetch).toHaveBeenCalledWith(apiHandler.apiUrl, {
         method: "GET",
@@ -53,6 +54,7 @@ describe.each([stateApiParameters, mappingsApiParameters])(
     });
 
     it("should fetch current state", async () => {
+      const apiHandler = new ApiHandler();
       const response = await apiHandler.getData();
       expect(response).toEqual(expectedData);
     });
@@ -61,6 +63,7 @@ describe.each([stateApiParameters, mappingsApiParameters])(
       vi.spyOn(global, "fetch").mockResolvedValue(
         new Response(JSON.stringify({ something: "different" })),
       );
+      const apiHandler = new ApiHandler();
       await expect(() => apiHandler.getData()).rejects.toThrowError();
     });
 
@@ -68,10 +71,12 @@ describe.each([stateApiParameters, mappingsApiParameters])(
       vi.spyOn(global, "fetch").mockResolvedValue(
         new Response(JSON.stringify(nonDecodableBody)),
       );
+      const apiHandler = new ApiHandler();
       await expect(() => apiHandler.getData()).rejects.toThrowError();
     });
 
     it("should call API url with HEAD request for caching", async () => {
+      const apiHandler = new ApiHandler();
       await apiHandler.getData();
       expect(global.fetch).toHaveBeenCalledWith(apiHandler.apiUrl, {
         method: "HEAD",
@@ -79,6 +84,8 @@ describe.each([stateApiParameters, mappingsApiParameters])(
     });
 
     it("should call API url with only 1 GET request when ETag is the same", async () => {
+      const apiHandler = new ApiHandler();
+
       // 1st fetching
       await apiHandler.getData();
       expect(global.fetch).toHaveBeenNthCalledWith(1, apiHandler.apiUrl, {
@@ -91,7 +98,7 @@ describe.each([stateApiParameters, mappingsApiParameters])(
       // 2nd fetching
       vi.spyOn(global, "fetch").mockResolvedValue(
         new Response(JSON.stringify(responseBody), {
-          headers: { ETag: `W/"456"` },
+          headers: { ETag: `W/"123"` },
         }),
       );
       await apiHandler.getData();
@@ -104,6 +111,8 @@ describe.each([stateApiParameters, mappingsApiParameters])(
     });
 
     it("should call API url with new GET request when ETag has changed", async () => {
+      const apiHandler = new ApiHandler();
+
       // 1st fetching
       await apiHandler.getData();
       expect(global.fetch).toHaveBeenNthCalledWith(1, apiHandler.apiUrl, {

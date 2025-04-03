@@ -5,18 +5,33 @@ abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
   abstract dataKey: keyof T & string;
   protected abstract encodingValidationRegex: RegExp;
 
-  private cache: { eTag: string; cachedData: unknown } | null = null;
+  #cache: { eTag: string; cachedData: unknown } | null = null;
 
   async #useCachedData(): Promise<unknown | null> {
-    return null;
+    const { headers } = await fetch(this.apiUrl, {
+      method: "HEAD",
+    });
+
+    if (headers.get("ETag") === this.#cache?.eTag) {
+      return this.#cache.cachedData;
+    } else {
+      return null;
+    }
   }
 
   async #fetchRawData(): Promise<unknown> {
     const response = await fetch(this.apiUrl, {
       method: "GET",
     });
+    const data = response.json();
 
-    return response.json();
+    // if eTag present, store data in cache
+    const eTag = response.headers.get("ETag");
+    if (eTag) {
+      this.#cache = { eTag, cachedData: data };
+    }
+
+    return data;
   }
 
   #validate(body: unknown): asserts body is T {
