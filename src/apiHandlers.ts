@@ -4,10 +4,18 @@ abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
   abstract apiUrl: string;
   abstract dataKey: keyof T & string;
   protected abstract encodingValidationRegex: RegExp;
-  protected abstract extract(encoded: T): U;
+
+  private cache: { eTag: string; cachedData: unknown } | null = null;
+
+  async #useCachedData(): Promise<unknown | null> {
+    return null;
+  }
 
   async #fetchRawData(): Promise<unknown> {
-    const response = await fetch(this.apiUrl);
+    const response = await fetch(this.apiUrl, {
+      method: "GET",
+    });
+
     return response.json();
   }
 
@@ -31,8 +39,11 @@ abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
     }
   }
 
+  protected abstract extract(encoded: T): U;
+
   async getData(): Promise<U> {
-    const data = await this.#fetchRawData();
+    const cache = await this.#useCachedData();
+    const data = cache ?? (await this.#fetchRawData()); // fetch data only on cache absent or outdated
     this.#validate(data);
     this.#checkEncoding(data);
     return this.extract(data);

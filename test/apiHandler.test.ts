@@ -35,7 +35,9 @@ describe.each([stateApiParameters, mappingsApiParameters])(
     beforeEach(() => {
       // mock fetch to return responseBody in a response body
       vi.spyOn(global, "fetch").mockResolvedValue(
-        new Response(JSON.stringify(responseBody)),
+        new Response(JSON.stringify(responseBody), {
+          headers: { ETag: `W/"456"` },
+        }),
       );
     });
 
@@ -43,9 +45,11 @@ describe.each([stateApiParameters, mappingsApiParameters])(
       vi.restoreAllMocks();
     });
 
-    it("should call proper API url", async () => {
+    it("should call proper API url with GET request", async () => {
       await apiHandler.getData();
-      expect(global.fetch).toHaveBeenCalledWith(apiHandler.apiUrl);
+      expect(global.fetch).toHaveBeenCalledWith(apiHandler.apiUrl, {
+        method: "GET",
+      });
     });
 
     it("should fetch current state", async () => {
@@ -65,6 +69,63 @@ describe.each([stateApiParameters, mappingsApiParameters])(
         new Response(JSON.stringify(nonDecodableBody)),
       );
       await expect(() => apiHandler.getData()).rejects.toThrowError();
+    });
+
+    it("should call API url with HEAD request for caching", async () => {
+      await apiHandler.getData();
+      expect(global.fetch).toHaveBeenCalledWith(apiHandler.apiUrl, {
+        method: "HEAD",
+      });
+    });
+
+    it("should call API url with only 1 GET request when ETag is the same", async () => {
+      // 1st fetching
+      await apiHandler.getData();
+      expect(global.fetch).toHaveBeenNthCalledWith(1, apiHandler.apiUrl, {
+        method: "HEAD",
+      });
+      expect(global.fetch).toHaveBeenNthCalledWith(2, apiHandler.apiUrl, {
+        method: "GET",
+      });
+
+      // 2nd fetching
+      vi.spyOn(global, "fetch").mockResolvedValue(
+        new Response(JSON.stringify(responseBody), {
+          headers: { ETag: `W/"456"` },
+        }),
+      );
+      await apiHandler.getData();
+      expect(global.fetch).toHaveBeenNthCalledWith(1, apiHandler.apiUrl, {
+        method: "HEAD",
+      });
+      expect(global.fetch).not.toHaveBeenNthCalledWith(2, apiHandler.apiUrl, {
+        method: "GET",
+      });
+    });
+
+    it("should call API url with new GET request when ETag has changed", async () => {
+      // 1st fetching
+      await apiHandler.getData();
+      expect(global.fetch).toHaveBeenNthCalledWith(1, apiHandler.apiUrl, {
+        method: "HEAD",
+      });
+      expect(global.fetch).toHaveBeenNthCalledWith(2, apiHandler.apiUrl, {
+        method: "GET",
+      });
+
+      // 2nd fetching
+      vi.spyOn(global, "fetch").mockResolvedValue(
+        new Response(JSON.stringify(responseBody), {
+          headers: { ETag: `W/"456"` },
+        }),
+      );
+      await apiHandler.getData();
+      expect(global.fetch).toHaveBeenNthCalledWith(1, apiHandler.apiUrl, {
+        method: "HEAD",
+      });
+      expect(global.fetch).toHaveBeenNthCalledWith(2, apiHandler.apiUrl, {
+        method: "GET",
+      });
     });
   },
 );
