@@ -1,15 +1,22 @@
 export default class Config {
+  static #instance: Config | null;
+
   baseApiUrl: string;
 
-  constructor() {
-    this.baseApiUrl = "WRONGURL";
+  // private constructor to avoid direct construction with the 'new' operator
+  private constructor() {
+    const apiUrl = process.env["RTC_API_URL"] ?? "http://localhost";
+    const apiPort = process.env["RTC_API_PORT"] ?? "3000";
+    const apiRootPath = process.env["RTC_API_ROOT_PATH"] ?? "/api";
+
+    this.baseApiUrl = `${apiUrl}:${apiPort}${apiRootPath}`;
   }
 
   static get instance(): Config {
-    throw Error("Not implemented");
+    return Config.#instance ?? (Config.#instance = new Config());
   }
 
   static reset() {
-    throw Error("Not implemented");
+    Config.#instance = null;
   }
 }
