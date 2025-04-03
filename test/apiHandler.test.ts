@@ -1,34 +1,35 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { MappingsApiHandler, StateApiHandler } from "../src/apiHandlers";
 
-describe.each([
-  {
-    apiHandler: new StateApiHandler(),
-    responseBody: {
-      odds: "a,b,c,d,e,f,g,h,\ni,j,k,l,m,n,o,p,\nq,r,s,t,u,v,w,x,",
-    },
-    expectedData: [
-      ["a", "b", "c", "d", "e", "f", "g", "h"],
-      ["i", "j", "k", "l", "m", "n", "o", "p"],
-      ["q", "r", "s", "t", "u", "v", "w", "x"],
-    ] as const,
-    nonDecodableBody: { odds: "a,b,c,d\ne,f,g,h" },
+const stateApiParameters = {
+  apiHandler: new StateApiHandler(),
+  responseBody: {
+    odds: "a,b,c,d,e,f,g,h,\ni,j,k,l,m,n,o,p,\nq,r,s,t,u,v,w,x,",
   },
-  {
-    apiHandler: new MappingsApiHandler(),
-    responseBody: {
-      mappings: "id1:value1;id2:value2;idN:valueN",
-    },
-    expectedData: new Map([
-      ["id1", "value1"],
-      ["id2", "value2"],
-      ["idN", "valueN"],
-    ]),
-    nonDecodableBody: {
-      mappings: "id1;id2:value2;id3",
-    },
+  expectedData: [
+    ["a", "b", "c", "d", "e", "f", "g", "h"],
+    ["i", "j", "k", "l", "m", "n", "o", "p"],
+    ["q", "r", "s", "t", "u", "v", "w", "x"],
+  ] as const,
+  nonDecodableBody: { odds: "a,b,c,d\ne,f,g,h" },
+};
+
+const mappingsApiParameters = {
+  apiHandler: new MappingsApiHandler(),
+  responseBody: {
+    mappings: "id1:value1;id2:value2;idN:valueN",
   },
-])(
+  expectedData: new Map([
+    ["id1", "value1"],
+    ["id2", "value2"],
+    ["idN", "valueN"],
+  ]),
+  nonDecodableBody: {
+    mappings: "id1;id2:value2;id3",
+  },
+};
+
+describe.each([stateApiParameters, mappingsApiParameters])(
   "$apiHandler.constructor.name API handler",
   ({ apiHandler, responseBody, expectedData, nonDecodableBody }) => {
     beforeEach(() => {

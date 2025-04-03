@@ -1,3 +1,5 @@
+import Config from "./config";
+
 abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
   abstract apiUrl: string;
   abstract dataKey: keyof T & string;
@@ -53,7 +55,7 @@ export class StateApiHandler extends BaseApiHandler<
   StateAPIResponse,
   Tuple8[]
 > {
-  apiUrl = "http://localhost:3000/api/state";
+  apiUrl = Config.instance.baseApiUrl + "/state";
   dataKey = "odds" as const;
   protected encodingValidationRegex = /^([\w\-@|]+,){8}(\n([\w\-@|]+,){8})*$/;
 
@@ -71,7 +73,7 @@ export class MappingsApiHandler extends BaseApiHandler<
   MappingsAPIResponse,
   Map<string, string>
 > {
-  apiUrl = "http://localhost:3000/api/mappings";
+  apiUrl = Config.instance.baseApiUrl + "/mappings";
   dataKey = "mappings" as const;
   protected encodingValidationRegex =
     /^([\w\-@|]+:[\w\-@|]+)(;[\w\-@|]+:[\w\-@|]+)*$/;
