@@ -1,6 +1,7 @@
-abstract class BaseApiHandler<T, U> {
+abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
   abstract apiUrl: string;
-  abstract dataKey: string;
+  abstract dataKey: keyof T & string;
+  protected abstract encodingValidationRegex: RegExp;
   protected abstract extract(encoded: T): U;
 
   async #fetchRawData(): Promise<unknown> {
@@ -11,14 +12,28 @@ abstract class BaseApiHandler<T, U> {
   #validate(body: unknown): asserts body is T {
     // typescript magic to allow body shape check on a generic function in abstract class
     const bodyAsRecord = body as Record<string, unknown> | null | undefined;
-    if (typeof bodyAsRecord?.[this.dataKey] !== "string")
-      throw new TypeError(`'${this.dataKey}' string not found in response`);
+    if (typeof bodyAsRecord?.[this.dataKey] !== "string") {
+      console.error(
+        `'${this.dataKey}' string not found in response ${JSON.stringify(body)}`,
+      );
+      throw new Error(`'${this.dataKey}' string not found in response`);
+    }
+  }
+
+  #checkEncoding(data: T) {
+    if (!this.encodingValidationRegex.test(data[this.dataKey])) {
+      console.error(`Cannot decode '${this.dataKey}': ${data[this.dataKey]}`);
+      throw new Error(
+        `Cannot decode '${this.dataKey}' - encoding is corrupted`,
+      );
+    }
   }
 
   async getData(): Promise<U> {
-    const rawData = await this.#fetchRawData();
-    this.#validate(rawData);
-    return this.extract(rawData);
+    const data = await this.#fetchRawData();
+    this.#validate(data);
+    this.#checkEncoding(data);
+    return this.extract(data);
   }
 }
 
@@ -39,22 +54,14 @@ export class StateApiHandler extends BaseApiHandler<
   Tuple8[]
 > {
   apiUrl = "http://localhost:3000/api/state";
-  dataKey = "odds";
+  dataKey = "odds" as const;
+  protected encodingValidationRegex = /^([\w\-@|]+,){8}(\n([\w\-@|]+,){8})*$/;
 
   protected extract(encoded: StateAPIResponse): Tuple8[] {
-    const oddsUnmapped = encoded.odds
+    return encoded.odds
       .replaceAll(/,(\n|$)/g, "$1")
       .split("\n", -1)
-      .map((sportEvent) => sportEvent.split(","));
-
-    oddsUnmapped.forEach((sportEvent, idx) => {
-      if (sportEvent.length !== 8)
-        throw new TypeError(
-          `'odds' contain elements with length different than 8 (row ${idx}: ${JSON.stringify(sportEvent)})`,
-        );
-    });
-
-    return oddsUnmapped as Tuple8[];
+      .map((sportEvent) => sportEvent.split(",")) as Tuple8[];
   }
 }
 
@@ -65,24 +72,15 @@ export class MappingsApiHandler extends BaseApiHandler<
   Map<string, string>
 > {
   apiUrl = "http://localhost:3000/api/mappings";
-  dataKey = "mappings";
+  dataKey = "mappings" as const;
+  protected encodingValidationRegex =
+    /^([\w\-@|]+:[\w\-@|]+)(;[\w\-@|]+:[\w\-@|]+)*$/;
 
   protected extract(encoded: MappingsAPIResponse): Map<string, string> {
     const mappingsSplit = encoded.mappings
       .split(";")
-      .map((mapping) => mapping.split(":"));
+      .map((mapping) => mapping.split(":")) as [string, string][];
 
-    mappingsSplit.forEach((mapping, idx) => {
-      if (mapping.length !== 2)
-        throw new TypeError(
-          `'mappings' contain elements with length different than 2 (row ${idx})`,
-        );
-    });
-    const mappingsTuples: [string, string][] = mappingsSplit as [
-      string,
-      string,
-    ][];
-
-    return new Map(mappingsTuples);
+    return new Map(mappingsSplit);
   }
 }
