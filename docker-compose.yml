@@ -5,3 +5,11 @@ services:
     image: mysteriouscrawler/test
     ports:
       - "3000:3000"
+  rtc-app:
+    build: .
+    ports:
+      - "4000:4000"
+    depends_on:
+      - simulation
+    environment:
+      - RTC_API_URL=http://simulation
