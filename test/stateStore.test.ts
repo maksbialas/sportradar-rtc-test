@@ -43,8 +43,8 @@ describe("Sport Event state store", () => {
 
     expect(store.list).toEqual([event1]);
     expect(store.historized).toEqual([
-      event1,
       { ...event2, status: "REMOVED" },
+      event1,
     ]);
   });
 

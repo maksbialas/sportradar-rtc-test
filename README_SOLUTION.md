@@ -39,8 +39,9 @@ It fetches data using the API Handlers, extracts scores, applies mapping and ret
 ### [State Store](src/stateStore.ts)
 
 The State Store handles in-memory storage of the extracted data. It provides methods for updating (`update`)
-and retrieving (`list`, `historize`) the state. If persistent storage (e.g., a database) is added in the future, 
-this module would be the integration point.
+and retrieving (`list`, `historize`) the state. An additional logging layer is implemented
+using the [Decorator Pattern](https://en.wikipedia.org/wiki/Decorator_pattern).
+If persistent storage (e.g., a database) is added in the future, this module would be the integration point.
 
 ### [API server](src/server.ts)
 

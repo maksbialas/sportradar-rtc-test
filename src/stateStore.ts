@@ -4,47 +4,74 @@ type SportEventHistorized = Omit<SportEvent, "status"> & {
   status: "REMOVED" | SportEvent["status"];
 };
 
-export class SportEventStateStore {
-  #store: SportEventHistorized[] = [];
+class SportEventStateStoreBase {
+  protected store: Map<SportEventHistorized["id"], SportEventHistorized> =
+    new Map();
 
   update(data: SportEvent[]) {
-    const newEvents = new Map(data.map((event) => [event.id, event]));
+    const oldEntries: [string, SportEventHistorized][] = this.store
+      .entries()
+      .toArray()
+      .map(([id, event]) => [id, { ...event, status: "REMOVED" }]);
 
-    const removed: SportEventHistorized[] = this.#store
-      .filter((event) => !newEvents.has(event.id))
-      .map((event) => ({ ...event, status: "REMOVED" }));
+    const newEntries: [string, SportEvent][] = data.map((event) => [
+      event.id,
+      event,
+    ]);
 
-    for (const old of this.#store) {
-      const newEvent = newEvents.get(old.id);
-      if (newEvent) {
-        if (newEvent.status !== old.status)
-          console.log(
-            `Event "${newEvent.id}" changed status: "${old.status}" -> "${newEvent.status}"`,
-          );
-
-        const [newScores, oldScores] = [
-          newEvent.scores.get("CURRENT"),
-          old.scores.get("CURRENT"),
-        ];
-        if (
-          newScores &&
-          oldScores &&
-          JSON.stringify(newScores) !== JSON.stringify(oldScores)
-        )
-          console.log(
-            `Score of "${newEvent.id}" changed: ${oldScores.home}:${oldScores.away} -> ${newScores.home}:${newScores.away}`,
-          );
-      }
-    }
-
-    this.#store = [...data, ...removed];
+    this.store = new Map([...oldEntries, ...newEntries]);
   }
 
   get list(): SportEvent[] {
-    return this.#store.filter((e) => e.status !== "REMOVED") as SportEvent[];
+    return [
+      ...this.store.values().filter((e) => e.status !== "REMOVED"),
+    ] as SportEvent[];
   }
 
-  get historized() {
-    return this.#store;
+  get historized(): SportEventHistorized[] {
+    return [...this.store.values()];
+  }
+}
+
+export class SportEventStateStore extends SportEventStateStoreBase {
+  #withLoggedChanges(callback: () => void) {
+    const getStatusesAndScores = () => {
+      return new Map(
+        this.store
+          .entries()
+          .map(([id, event]) => [
+            id,
+            [
+              event.status,
+              event.scores.get("CURRENT")?.home,
+              event.scores.get("CURRENT")?.away,
+            ] as const,
+          ]),
+      );
+    };
+
+    const old = getStatusesAndScores();
+    callback();
+    const updated = getStatusesAndScores();
+
+    for (const [oldId, [oldStatus, oldHomeScore, oldAwayScore]] of old) {
+      const [updatedStatus, updatedHomeScore, updatedAwayScore] =
+        updated.get(oldId)!;
+      if (oldStatus !== updatedStatus)
+        console.log(
+          `Event "${oldId}" changed status: "${oldStatus}" -> "${updatedStatus}"`,
+        );
+      if (
+        oldHomeScore !== undefined &&
+        (oldHomeScore !== updatedHomeScore || oldAwayScore !== updatedAwayScore)
+      )
+        console.log(
+          `Score of "${oldId}" changed: ${oldHomeScore}:${oldAwayScore} -> ${updatedHomeScore}:${updatedAwayScore}`,
+        );
+    }
+  }
+
+  update(data: SportEvent[]) {
+    this.#withLoggedChanges(() => super.update(data));
   }
 }
