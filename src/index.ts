@@ -16,7 +16,8 @@ export async function main() {
     }
   }, 1000);
 
-  await server.listen({ port: Config.instance.apiPort });
+  console.log("Starting listening on port", Config.instance.apiPort);
+  await server.listen({ host: "0.0.0.0", port: Config.instance.apiPort });
 }
 
 main();
