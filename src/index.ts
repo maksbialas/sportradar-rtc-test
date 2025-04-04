@@ -9,7 +9,11 @@ export async function main() {
   const server = createApi(store);
 
   setInterval(async () => {
-    store.update(await extractor.extract());
+    try {
+      store.update(await extractor.extract());
+    } catch (e) {
+      console.error(e);
+    }
   }, 1000);
 
   await server.listen({ port: Config.instance.apiPort });
