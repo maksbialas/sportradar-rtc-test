@@ -1,17 +1,19 @@
 export default class Config {
   static #instance: Config | null;
 
-  baseApiUrl: string;
+  baseSimulationApiUrl: string;
+  apiHost: string;
   apiPort: number;
   apiPath: string;
 
   // private constructor to avoid direct construction with the 'new' operator
   private constructor() {
-    const apiUrl = process.env["RTC_API_URL"] ?? "http://localhost";
-    const apiPort = process.env["RTC_API_PORT"] ?? "3000";
-    const apiRootPath = process.env["RTC_API_ROOT_PATH"] ?? "/api";
+    const simulationApiUrl = process.env["RTC_API_URL"] ?? "http://localhost";
+    const simulationApiPort = process.env["RTC_API_PORT"] ?? "3000";
+    const simulationApiRootPath = process.env["RTC_API_ROOT_PATH"] ?? "/api";
 
-    this.baseApiUrl = `${apiUrl}:${apiPort}${apiRootPath}`;
+    this.baseSimulationApiUrl = `${simulationApiUrl}:${simulationApiPort}${simulationApiRootPath}`;
+    this.apiHost = process.env["API_HOST"] ?? "localhost";
     this.apiPort = process.env["API_PORT"]
       ? parseInt(process.env["API_PORT"])
       : 4000;

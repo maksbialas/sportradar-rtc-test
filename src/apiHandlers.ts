@@ -66,7 +66,7 @@ export class StateApiHandler extends BaseApiHandler<
   StateAPIResponse,
   StateResponseExtracted[]
 > {
-  apiUrl = Config.instance.baseApiUrl + "/state";
+  apiUrl = Config.instance.baseSimulationApiUrl + "/state";
   dataKey = "odds" as const;
 
   protected extract(encoded: StateAPIResponse): StateResponseExtracted[] {
@@ -104,7 +104,7 @@ export class MappingsApiHandler extends BaseApiHandler<
   MappingsAPIResponse,
   Map<string, string>
 > {
-  apiUrl = Config.instance.baseApiUrl + "/mappings";
+  apiUrl = Config.instance.baseSimulationApiUrl + "/mappings";
   dataKey = "mappings" as const;
 
   protected extract(encoded: MappingsAPIResponse): Map<string, string> {

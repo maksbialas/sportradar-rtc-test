@@ -12,4 +12,5 @@ services:
     depends_on:
       - simulation
     environment:
+      - API_HOST=0.0.0.0
       - RTC_API_URL=http://simulation
