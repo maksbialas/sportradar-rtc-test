@@ -83,9 +83,17 @@ describe("Sport Event state store", () => {
 
     const logSpy = vi.spyOn(console, "log");
 
-    event1.scores.set("CURRENT", { home: 3, away: 0 });
-    event2.scores.set("CURRENT", { home: 1, away: 2 });
-    store.update([event1, event2]);
+    const event1New: SportEvent = {
+      ...events[0],
+      status: "LIVE",
+      scores: new Map([["CURRENT", { home: 3, away: 0 }]]),
+    };
+    const event2New: SportEvent = {
+      ...events[1],
+      status: "LIVE",
+      scores: new Map([["CURRENT", { home: 1, away: 2 }]]),
+    };
+    store.update([event1New, event2New]);
 
     expect(logSpy).toBeCalledWith(
       expect.stringContaining(`Score of "a" changed: 2:0 -> 3:0`),

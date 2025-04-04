@@ -8,10 +8,35 @@ export class SportEventStateStore {
   #store: SportEventHistorized[] = [];
 
   update(data: SportEvent[]) {
-    const newIds = new Set(data.map((event) => event.id));
+    const newEvents = new Map(data.map((event) => [event.id, event]));
+
     const removed: SportEventHistorized[] = this.#store
-      .filter((event) => !newIds.has(event.id))
+      .filter((event) => !newEvents.has(event.id))
       .map((event) => ({ ...event, status: "REMOVED" }));
+
+    for (const old of this.#store) {
+      const newEvent = newEvents.get(old.id);
+      if (newEvent) {
+        if (newEvent.status !== old.status)
+          console.log(
+            `Event "${newEvent.id}" changed status: "${old.status}" -> "${newEvent.status}"`,
+          );
+
+        const [newScores, oldScores] = [
+          newEvent.scores.get("CURRENT"),
+          old.scores.get("CURRENT"),
+        ];
+        if (
+          newScores &&
+          oldScores &&
+          JSON.stringify(newScores) !== JSON.stringify(oldScores)
+        )
+          console.log(
+            `Score of "${newEvent.id}" changed: ${oldScores.home}:${oldScores.away} -> ${newScores.home}:${newScores.away}`,
+          );
+      }
+    }
+
     this.#store = [...data, ...removed];
   }
 
