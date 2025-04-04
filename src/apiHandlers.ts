@@ -73,7 +73,7 @@ export class StateApiHandler extends BaseApiHandler<
     if (encoded.odds === "") return [];
     const extractedRecords: StateResponseExtracted[] = [];
 
-    let lines = encoded.odds
+    const lines = encoded.odds
       .replace(/(,\n?|\n)$/, "") // strip trailing newline / comma + newline
       .split("\n");
 
