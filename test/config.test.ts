@@ -13,7 +13,7 @@ describe("Config", () => {
     expect(config.baseApiUrl).toBe("http://localhost:3000/api");
   });
 
-  it("should correctly construct default baseApiUrl1", () => {
+  it("should correctly construct baseApiUrl from ENV", () => {
     vi.stubEnv("RTC_API_URL", "https://fake.api");
     vi.stubEnv("RTC_API_PORT", "8080");
     vi.stubEnv("RTC_API_ROOT_PATH", "/test");
@@ -21,6 +21,23 @@ describe("Config", () => {
     const config = Config.instance;
 
     expect(config.baseApiUrl).toBe("https://fake.api:8080/test");
+  });
+
+  it("should correctly construct default API port and path", () => {
+    const config = Config.instance;
+
+    expect(config.apiPort).toBe(4000);
+    expect(config.apiPath).toBe("/client/state");
+  });
+
+  it("should correctly construct baseApiUrl from ENV", () => {
+    vi.stubEnv("API_PORT", "2222");
+    vi.stubEnv("API_PATH", "/test/path");
+
+    const config = Config.instance;
+
+    expect(config.apiPort).toBe(2222);
+    expect(config.apiPath).toBe("/test/path");
   });
 
   it("should be constructed only once", () => {

@@ -2,6 +2,8 @@ export default class Config {
   static #instance: Config | null;
 
   baseApiUrl: string;
+  apiPort: number;
+  apiPath: string;
 
   // private constructor to avoid direct construction with the 'new' operator
   private constructor() {
@@ -10,6 +12,10 @@ export default class Config {
     const apiRootPath = process.env["RTC_API_ROOT_PATH"] ?? "/api";
 
     this.baseApiUrl = `${apiUrl}:${apiPort}${apiRootPath}`;
+    this.apiPort = process.env["API_PORT"]
+      ? parseInt(process.env["API_PORT"])
+      : 4000;
+    this.apiPath = process.env["API_PATH"] ?? "/client/state";
   }
 
   static get instance(): Config {
