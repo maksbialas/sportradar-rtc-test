@@ -21,7 +21,7 @@ export async function main() {
   }, interval);
 
   console.log("API server starting listening on port", getConfig().apiPort);
-  await server.listen({ host: "0.0.0.0", port: getConfig().apiPort });
+  await server.listen({ host: getConfig().apiHost, port: getConfig().apiPort });
 }
 
 main();
