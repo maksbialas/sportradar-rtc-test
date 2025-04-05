@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { SportEvent } from "../src/dataExtractor";
-import { SportEventStateStore } from "../src/stateStore";
+import {
+  scoresLogged,
+  SportEventStateStore,
+  statusLogged,
+} from "../src/stateStore";
 
 const events: SportEvent[] = [
   {
@@ -49,7 +53,8 @@ describe("Sport Event state store", () => {
   });
 
   it("should log on event status change", () => {
-    const store = new SportEventStateStore();
+    let store = new SportEventStateStore();
+    store = statusLogged(store);
     store.update(events);
 
     const logSpy = vi.spyOn(console, "log");
@@ -67,7 +72,8 @@ describe("Sport Event state store", () => {
   });
 
   it("should log on event score change", () => {
-    const store = new SportEventStateStore();
+    let store = new SportEventStateStore();
+    store = scoresLogged(store);
 
     const event1: SportEvent = {
       ...events[0],

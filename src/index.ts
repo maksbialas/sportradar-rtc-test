@@ -1,10 +1,12 @@
-import { SportEventStateStore } from "./stateStore";
+import { SportEventStateStore, scoresLogged, statusLogged } from "./stateStore";
 import { SportEventDataExtractor } from "./dataExtractor";
 import { createApi } from "./server";
 import getConfig from "./config";
 
 export async function main() {
   let store = new SportEventStateStore();
+  store = scoresLogged(store);
+  store = statusLogged(store);
   const extractor = new SportEventDataExtractor();
   const server = createApi(store);
   const interval = 1000;
