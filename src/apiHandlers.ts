@@ -1,4 +1,4 @@
-import Config from "./config";
+import getConfig from "./config";
 
 abstract class BaseApiHandler<T extends { [dataKey: string]: string }, U> {
   abstract apiUrl: string;
@@ -66,7 +66,7 @@ export class StateApiHandler extends BaseApiHandler<
   StateAPIResponse,
   StateResponseExtracted[]
 > {
-  apiUrl = Config.instance.baseSimulationApiUrl + "/state";
+  apiUrl = getConfig().baseSimulationApiUrl + "/state";
   dataKey = "odds" as const;
 
   protected extract(encoded: StateAPIResponse): StateResponseExtracted[] {
@@ -104,7 +104,7 @@ export class MappingsApiHandler extends BaseApiHandler<
   MappingsAPIResponse,
   Map<string, string>
 > {
-  apiUrl = Config.instance.baseSimulationApiUrl + "/mappings";
+  apiUrl = getConfig().baseSimulationApiUrl + "/mappings";
   dataKey = "mappings" as const;
 
   protected extract(encoded: MappingsAPIResponse): Map<string, string> {

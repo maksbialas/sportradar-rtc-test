@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import type { SportEventStateStore } from "./stateStore";
 import type { SportEvent } from "./dataExtractor";
-import Config from "./config";
+import getConfig from "./config";
 
 function transformResponse(state: SportEvent[]) {
   const entries = state.map((sportEvent) => ({
@@ -33,7 +33,7 @@ function transformResponse(state: SportEvent[]) {
 export function createApi(store: SportEventStateStore) {
   const fastify = Fastify();
 
-  fastify.get(Config.instance.apiPath, () => {
+  fastify.get(getConfig().apiPath, () => {
     return transformResponse(store.list);
   });
 

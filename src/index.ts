@@ -1,10 +1,10 @@
 import { SportEventStateStore } from "./stateStore";
 import { SportEventDataExtractor } from "./dataExtractor";
 import { createApi } from "./server";
-import Config from "./config";
+import getConfig from "./config";
 
 export async function main() {
-  const store = new SportEventStateStore();
+  let store = new SportEventStateStore();
   const extractor = new SportEventDataExtractor();
   const server = createApi(store);
   const interval = 1000;
@@ -18,8 +18,8 @@ export async function main() {
     }
   }, interval);
 
-  console.log("API server starting listening on port", Config.instance.apiPort);
-  await server.listen({ host: "0.0.0.0", port: Config.instance.apiPort });
+  console.log("API server starting listening on port", getConfig().apiPort);
+  await server.listen({ host: "0.0.0.0", port: getConfig().apiPort });
 }
 
 main();
