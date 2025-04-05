@@ -5,8 +5,7 @@ type SportEventHistorized = Omit<SportEvent, "status"> & {
 };
 
 export class SportEventStateStore {
-  protected store: Map<SportEventHistorized["id"], SportEventHistorized> =
-    new Map();
+  protected store: Map<string, SportEventHistorized> = new Map();
 
   update(data: SportEvent[]) {
     const oldEntries: [string, SportEventHistorized][] = this.store
@@ -33,62 +32,45 @@ export class SportEventStateStore {
   }
 }
 
-export function scoresLogged(
-  stateStore: SportEventStateStore,
-): SportEventStateStore {
-  const originalUpdate = stateStore.update.bind(stateStore);
+const logger =
+  <T>(
+    extract: (entry: SportEventHistorized) => T | undefined,
+    compare: (old: T, updated: T) => boolean,
+    log: (id: string, old: T, updated: T) => string,
+  ) =>
+  (stateStore: SportEventStateStore) => {
+    const originalUpdate = stateStore.update.bind(stateStore);
 
-  stateStore.update = function (data: SportEvent[]) {
-    const getScores = () =>
-      new Map(
-        stateStore.store
-          .entries()
-          .map(([id, event]) => [id, event.scores.get("CURRENT")]),
-      );
-
-    const oldScores = getScores();
-    originalUpdate(data);
-    const newScores = getScores();
-
-    for (const [oldId, oldScore] of oldScores) {
-      const updatedScore = newScores.get(oldId)!;
-      if (
-        oldScore !== undefined &&
-        (oldScore.home !== updatedScore.home ||
-          oldScore.away !== updatedScore.away)
-      )
-        console.log(
-          `Score of "${oldId}" changed: ${oldScore.home}:${oldScore.away} -> ${updatedScore.home}:${updatedScore.away}`,
+    stateStore.update = function (data: SportEvent[]) {
+      const getValToCompare = () =>
+        new Map(
+          stateStore.store.entries().map(([id, event]) => [id, extract(event)]),
         );
-    }
+
+      const oldVals = getValToCompare();
+      originalUpdate(data);
+      const newVals = getValToCompare();
+
+      for (const [oldId, oldEntry] of oldVals) {
+        const updatedEntry = newVals.get(oldId)!;
+        if (oldEntry !== undefined && compare(oldEntry, updatedEntry))
+          console.log(log(oldId, oldEntry, updatedEntry));
+      }
+    };
+
+    return stateStore;
   };
 
-  return stateStore;
-}
+export const scoresLogged = logger(
+  (event) => event.scores.get("CURRENT"),
+  (old, updated) => old.home !== updated.home || old.away !== updated.away,
+  (id, old, updated) =>
+    `Score of "${id}" changed: ${old.home}:${old.away} -> ${updated.home}:${updated.away}`,
+);
 
-export function statusLogged(
-  stateStore: SportEventStateStore,
-): SportEventStateStore {
-  const originalUpdate = stateStore.update.bind(stateStore);
-
-  stateStore.update = function (data: SportEvent[]) {
-    const getStatuses = () =>
-      new Map(
-        stateStore.store.entries().map(([id, event]) => [id, event.status]),
-      );
-
-    const oldStatuses = getStatuses();
-    originalUpdate(data);
-    const newStatuses = getStatuses();
-
-    for (const [oldId, oldStatus] of oldStatuses) {
-      const updatedStatus = newStatuses.get(oldId)!;
-      if (oldStatus !== updatedStatus)
-        console.log(
-          `Event "${oldId}" changed status: "${oldStatus}" -> "${updatedStatus}"`,
-        );
-    }
-  };
-
-  return stateStore;
-}
+export const statusLogged = logger(
+  (event) => event.status,
+  (old, updated) => old !== updated,
+  (id, old, updated) =>
+    `Event "${id}" changed status: "${old}" -> "${updated}"`,
+);
